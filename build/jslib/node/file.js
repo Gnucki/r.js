@@ -76,6 +76,12 @@ define(['fs', 'path', 'prim'], function (fs, path, prim) {
          * @param {String} fileName
          */
         absPath: function (fileName) {
+            if (!file.exists(fileName)) {
+                try {
+                    //Try to find the path of the file thanks to node's require resolving.
+                    fileName = nodeRequire.resolve(fileName);
+                } catch(e) {}
+            }
             return frontSlash(path.normalize(frontSlash(fs.realpathSync(fileName))));
         },
 

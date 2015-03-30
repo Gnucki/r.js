@@ -103,6 +103,16 @@ define([ 'env!env/file', 'pragma', 'parse', 'lang', 'logger', 'commonJs', 'prim'
             if (require.jsExtRegExp.test(moduleName)) {
                 url = (context.config.dir || context.config.dirBaseUrl) + url;
             }
+            //Try to resolve the url with the current file manager
+            //if the file does not exist.
+            if (!file.exists(url)) {
+                var resolvedUrl = url
+                    .replace(context.config.dir, '')
+                    .replace(context.config.dirBaseUrl, '');
+                try {
+                    url = file.absPath(resolvedUrl);
+                } catch(e) {}
+            }
             return url;
         }
 
