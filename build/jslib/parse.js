@@ -550,6 +550,43 @@ define(['./esprimaAdapter', 'lang'], function (esprima, lang) {
     };
 
     /**
+     * Absolutise dependencies.
+     * require('relativePathStringLiteral') => require('absolutePathStringLiteral')
+     * define(['relativePathStringLiteral']) => require(['absolutePathStringLiteral'])
+     * require(['relativePathStringLiteral']) => require(['absolutePathStringLiteral'])
+     * @param {String} fileName
+     * @param {String} fileContents
+     * @param {Function} makeAbsolute
+     *
+     * @returns {String} the file contents with absolutized dependencies.
+     */
+    parse.absolutiseDependencies = function (fileName, fileContents, makeAbsolute) {
+        var dependencies = parse.findDependencies(fileName, fileContents),
+            excludedDependencies = {require: true, module: true, exports: true};
+
+        if (dependencies.length) {
+            dependencies.forEach(function (dependency) {
+                if (!(dependency in excludedDependencies)) {
+                    var dependencyPattern = '((require|define) ?\\([^\\)]*)(["\']' +
+                                            dependency.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") +
+                                            '["\'])([^\\)]*\\))',
+                        absoluteDependency = makeAbsolute(dependency);
+
+                    if (dependency !== absoluteDependency) {
+                        fileContents = fileContents.replace(
+                            new RegExp(dependencyPattern, 'g'),
+                            function(match, p1, p2, p3, p4) {
+                                return p1 + "'" + absoluteDependency + "'" + p4;
+                            });
+                    }
+                }
+            });
+        }
+
+        return fileContents;
+    };
+
+    /**
      * Finds only CJS dependencies, ones that are the form
      * require('stringLiteral')
      */

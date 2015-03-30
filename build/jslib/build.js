@@ -1893,6 +1893,36 @@ define(function (require) {
                             }
                         }
 
+                        //If the option "absolutise" is defined, transform the relative dependencies
+                        //in absolute dependencies.
+                        //This means that initial dependencies are interpreted as dependencies
+                        //relative to their owning file and transformed to dependencies
+                        //relative to the "baseUrl" path.
+                        if (config.absolutise) {
+                            singleContents = parse.absolutiseDependencies(moduleName, singleContents, function(path) {
+                                var fullPath = layer.buildPathMap[moduleName],
+                                    dependencyPath = path;
+                                if (dependencyPath.substring(dependencyPath.length - 4).indexOf('.') === -1) {
+                                    dependencyPath += '.js';
+                                }
+
+                                var dependencyFullPath = file.parent(fullPath) + '/' + dependencyPath;
+                                //Do not absolutise if no corresponding file.
+                                if (!file.exists(dependencyFullPath)) {
+                                    return path;
+                                }
+                                dependencyFullPath = file.absPath(dependencyFullPath);
+
+                                var dependencyModuleName = layer.buildFileToModule[dependencyFullPath];
+                                //Do not inject a dependency into itself. May happen with mapped named modules.
+                                if (moduleName === dependencyModuleName) {
+                                    return path;
+                                }
+
+                                return dependencyModuleName;
+                            });
+                        }
+
                         //Add line break at end of file, instead of at beginning,
                         //so source map line numbers stay correct, but still allow
                         //for some space separation between files in case ASI issues
